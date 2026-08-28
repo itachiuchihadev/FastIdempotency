@@ -1,0 +1,64 @@
+name: Publish NuGet Packages
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0.0, v1.0.1
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+    inputs:
+      version:
+        description: 'Package Version (e.g. 1.0.0). Leave blank to use Directory.Build.props version'
+        required: false
+        default: ''
+
+jobs:
+  build-test-publish:
+    name: Build, Test & Publish to NuGet
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for NuGet.org Trusted Publishing (OIDC)
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build in Release Mode
+        run: dotnet build -c Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      - name: Determine Version
+        id: get_version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+            echo "version_arg=/p:PackageVersion=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG_VER="${GITHUB_REF#refs/tags/v}"
+            echo "VERSION=$TAG_VER" >> $GITHUB_ENV
+            echo "version_arg=/p:PackageVersion=$TAG_VER" >> $GITHUB_OUTPUT
+          else
+            echo "version_arg=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pack NuGet Packages
+        run: dotnet pack -c Release --no-build -o ./nupkgs ${{ steps.get_version.outputs.version_arg }}
+
+      - name: Publish Packages to NuGet.org (Trusted Publishing / OIDC)
+        run: |
+          dotnet nuget push ./nupkgs/*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
