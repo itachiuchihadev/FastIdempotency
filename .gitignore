@@ -1,0 +1,27 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio / VS Code / Rider
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+## BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+## Test results & Coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## OS generated
+.DS_Store
+Thumbs.db

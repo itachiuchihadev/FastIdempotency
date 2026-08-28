@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="3.1.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embed Lua scripts into the assembly for atomic Redis operations -->
+    <EmbeddedResource Include="Scripts\acquire_lock.lua" />
+    <EmbeddedResource Include="Scripts\release_lock.lua" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastIdempotency.Core\FastIdempotency.Core.csproj" />
+  </ItemGroup>
+
+</Project>
