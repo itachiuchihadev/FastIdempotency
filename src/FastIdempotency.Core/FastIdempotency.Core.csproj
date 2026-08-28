@@ -1,9 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>FastIdempotency.Core</PackageId>
+    <Description>Core contracts, models, and SIMD-accelerated XxHash3 request hasher for FastIdempotency.</Description>
+    <PackageTags>idempotency;fastidempotency;xxhash3;performance;distributed-systems;dotnet</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -22,6 +22,14 @@ TestResults/
 *.coverage
 *.coveragexml
 
+## NuGet Packages & Artifacts
+*.nupkg
+*.snupkg
+artifacts/
+nupkgs/
+publish/
+
 ## OS generated
 .DS_Store
 Thumbs.db
+

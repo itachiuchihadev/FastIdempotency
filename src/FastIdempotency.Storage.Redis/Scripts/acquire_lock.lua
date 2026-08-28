@@ -9,8 +9,7 @@
 --   1 = lock acquired successfully (key did not exist)
 --   0 = lock NOT acquired (key already exists — another instance owns it)
 
-local existing = redis.call('GET', KEYS[1])
-if existing then
+if redis.call('EXISTS', KEYS[1]) == 1 then
     return 0
 end
 

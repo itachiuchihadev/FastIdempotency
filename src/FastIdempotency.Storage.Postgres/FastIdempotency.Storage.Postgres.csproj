@@ -1,9 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>FastIdempotency.Storage.Postgres</PackageId>
+    <Description>PostgreSQL storage provider with row-level distributed locking and transactions for FastIdempotency.</Description>
+    <PackageTags>idempotency;postgresql;npgsql;distributed-lock;fastidempotency</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

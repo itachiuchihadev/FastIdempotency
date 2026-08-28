@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>FastIdempotency.Storage.Redis</PackageId>
+    <Description>Redis distributed storage provider with atomic Lua script locking and pipelined response storage for FastIdempotency.</Description>
+    <PackageTags>idempotency;redis;stackexchange-redis;distributed-lock;fastidempotency</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

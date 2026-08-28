@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FastIdempotency.Core\FastIdempotency.Core.csproj" />
     <ProjectReference Include="..\..\src\FastIdempotency.AspNetCore\FastIdempotency.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\FastIdempotency.Storage.Redis\FastIdempotency.Storage.Redis.csproj" />
   </ItemGroup>
 
 </Project>
