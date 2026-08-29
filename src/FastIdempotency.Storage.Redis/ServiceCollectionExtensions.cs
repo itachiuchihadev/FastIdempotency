@@ -26,9 +26,13 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(options);
 
-        // IConnectionMultiplexer is a singleton — one multiplexed connection shared across all requests
-        services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(redisConnectionString));
+        // IConnectionMultiplexer is registered via factory so connection is deferred until first resolution
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var config = ConfigurationOptions.Parse(redisConnectionString);
+            config.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(config);
+        });
 
         services.AddSingleton<IIdempotencyStore, RedisIdempotencyStore>();
 

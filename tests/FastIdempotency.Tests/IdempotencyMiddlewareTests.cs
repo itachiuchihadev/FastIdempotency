@@ -16,6 +16,8 @@ namespace FastIdempotency.Tests;
 /// End-to-end middleware integration tests using WebApplicationFactory.
 /// Spins up a real Redis container and a real in-process ASP.NET Core server.
 /// </summary>
+[Trait("Category", "Integration")]
+[Trait("Category", "Redis")]
 public sealed class IdempotencyMiddlewareTests : IAsyncLifetime
 {
     private readonly RedisContainer _redis = new RedisBuilder("redis:7-alpine")

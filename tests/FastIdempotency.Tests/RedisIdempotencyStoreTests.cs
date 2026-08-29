@@ -12,6 +12,8 @@ namespace FastIdempotency.Tests;
 /// Integration tests for the Redis idempotency store.
 /// Spins up a real Redis Docker container via Testcontainers — no mocking.
 /// </summary>
+[Trait("Category", "Integration")]
+[Trait("Category", "Redis")]
 public sealed class RedisIdempotencyStoreTests : IAsyncLifetime
 {
     private readonly RedisContainer _container = new RedisBuilder("redis:7-alpine")
