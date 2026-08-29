@@ -68,7 +68,7 @@ public sealed class IdempotencyMiddleware
         var requestHash = hasher.ComputeHash(
             context.Request.Method,
             context.Request.Path + context.Request.QueryString,
-            body.Span);
+            body);
 
         // 5. Check existing record
         var existing = await store.GetAsync(storeKey, context.RequestAborted);
@@ -188,13 +188,12 @@ public sealed class IdempotencyMiddleware
 
     // ── Private Helpers ──────────────────────────────────────────────────────
 
-    private static async Task<Memory<byte>> ReadBodyAsync(HttpRequest request, CancellationToken ct)
+    private static async Task<byte[]> ReadBodyAsync(HttpRequest request, CancellationToken ct)
     {
-        // We use RecyclableMemoryStream under the hood via BodyCaptureStream approach.
-        // For hashing only, we read into a pooled buffer.
-        using var ms = new System.IO.MemoryStream();
+        // Use RecyclableMemoryStream from pool to avoid LOH allocations and GC pressure
+        await using var ms = BodyCaptureStream.PoolManager.GetStream("FastIdempotency.RequestBody");
         await request.Body.CopyToAsync(ms, ct);
-        return ms.ToArray().AsMemory();
+        return ms.ToArray();
     }
 
     private static async Task ReplayCachedResponseAsync(HttpContext context, IdempotentResponse cached)

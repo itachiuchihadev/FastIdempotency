@@ -9,7 +9,7 @@ namespace FastIdempotency.Benchmarks;
 /// against naive MemoryStream buffering to demonstrate zero Large Object Heap (LOH) fragmentation
 /// and reduced GC allocations on HTTP response captures.
 /// </summary>
-[SimpleJob(RuntimeMoniker.Net80)]
+[SimpleJob]
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev", "Median", "RatioSD")]
 public class BodyCaptureStreamBenchmarks

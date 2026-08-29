@@ -14,13 +14,20 @@ namespace FastIdempotency.Storage.Postgres;
 ///
 /// Schema is auto-created on first startup via <see cref="EnsureSchemaAsync"/>.
 /// </summary>
-public sealed class PostgresIdempotencyStore : IIdempotencyStore
+public sealed class PostgresIdempotencyStore : IIdempotencyStore, IAsyncDisposable, IDisposable
 {
-    private readonly string _connectionString;
+    private readonly NpgsqlDataSource _dataSource;
+    private readonly bool _ownsDataSource;
 
     public PostgresIdempotencyStore(string connectionString)
+        : this(NpgsqlDataSource.Create(connectionString), ownsDataSource: true)
     {
-        _connectionString = connectionString;
+    }
+
+    public PostgresIdempotencyStore(NpgsqlDataSource dataSource, bool ownsDataSource = false)
+    {
+        _dataSource = dataSource ?? throw new ArgumentNullException(nameof(dataSource));
+        _ownsDataSource = ownsDataSource;
     }
 
     /// <summary>
@@ -185,12 +192,24 @@ public sealed class PostgresIdempotencyStore : IIdempotencyStore
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    // ── Private Helpers ──────────────────────────────────────────────────────
+    // ── Private Helpers & Cleanup ───────────────────────────────────────────
 
-    private async Task<NpgsqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
+    private ValueTask<NpgsqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)
+        => _dataSource.OpenConnectionAsync(cancellationToken);
+
+    public void Dispose()
     {
-        var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync(cancellationToken);
-        return conn;
+        if (_ownsDataSource)
+        {
+            _dataSource.Dispose();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_ownsDataSource)
+        {
+            await _dataSource.DisposeAsync();
+        }
     }
 }

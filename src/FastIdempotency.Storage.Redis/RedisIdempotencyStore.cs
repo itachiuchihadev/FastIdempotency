@@ -25,15 +25,13 @@ public sealed class RedisIdempotencyStore : IIdempotencyStore
 {
     private readonly IDatabase _db;
 
-    // Lua scripts as strings — executed atomically on the Redis server
-    private readonly string _acquireLuaScript;
-    private readonly string _releaseLuaScript;
+    // Lua scripts as strings — cached statically to avoid assembly reflection per instance
+    private static readonly string AcquireLuaScript = LoadEmbeddedScript("acquire_lock.lua");
+    private static readonly string ReleaseLuaScript = LoadEmbeddedScript("release_lock.lua");
 
     public RedisIdempotencyStore(IConnectionMultiplexer connection)
     {
         _db = connection.GetDatabase();
-        _acquireLuaScript = LoadEmbeddedScript("acquire_lock.lua");
-        _releaseLuaScript = LoadEmbeddedScript("release_lock.lua");
     }
 
     /// <inheritdoc />
@@ -86,13 +84,12 @@ public sealed class RedisIdempotencyStore : IIdempotencyStore
         CancellationToken cancellationToken = default)
     {
         var result = await _db.ScriptEvaluateAsync(
-            _acquireLuaScript,
+            AcquireLuaScript,
             keys: [new RedisKey(key)],
             values:
             [
                 new RedisValue(lockOwner),
                 new RedisValue(((long)options.LockTimeout.TotalMilliseconds).ToString()),
-
                 new RedisValue(requestHash.ToString())
             ]).ConfigureAwait(false);
 
@@ -128,7 +125,7 @@ public sealed class RedisIdempotencyStore : IIdempotencyStore
     public async Task ReleaseLockAsync(string key, string lockOwner, CancellationToken cancellationToken = default)
     {
         await _db.ScriptEvaluateAsync(
-            _releaseLuaScript,
+            ReleaseLuaScript,
             keys: [new RedisKey(key)],
             values: [new RedisValue(lockOwner)]).ConfigureAwait(false);
     }

@@ -16,7 +16,7 @@ namespace FastIdempotency.Benchmarks;
 /// End-to-end middleware benchmarks measuring HTTP pipeline overhead, cache hit replay speed,
 /// first-time lock acquisition, and payload mismatch rejection performance.
 /// </summary>
-[SimpleJob(RuntimeMoniker.Net80)]
+[SimpleJob]
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev", "Median", "RatioSD")]
 public class MiddlewarePipelineBenchmarks

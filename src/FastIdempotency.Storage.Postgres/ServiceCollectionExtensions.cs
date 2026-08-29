@@ -1,6 +1,7 @@
 using FastIdempotency.Core.Abstractions;
 using FastIdempotency.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace FastIdempotency.Storage.Postgres;
 
@@ -33,6 +34,30 @@ public static class ServiceCollectionExtensions
         if (autoMigrate)
         {
             // Run schema creation synchronously at registration time (startup phase)
+            store.EnsureSchemaAsync().GetAwaiter().GetResult();
+        }
+
+        services.AddSingleton<IIdempotencyStore>(store);
+        return services;
+    }
+
+    /// <summary>
+    /// Registers <see cref="PostgresIdempotencyStore"/> using an existing <see cref="NpgsqlDataSource"/>.
+    /// </summary>
+    public static IServiceCollection AddFastIdempotencyPostgres(
+        this IServiceCollection services,
+        NpgsqlDataSource dataSource,
+        Action<IdempotencyOptions>? configureOptions = null,
+        bool autoMigrate = true)
+    {
+        var options = new IdempotencyOptions();
+        configureOptions?.Invoke(options);
+        services.AddSingleton(options);
+
+        var store = new PostgresIdempotencyStore(dataSource, ownsDataSource: false);
+
+        if (autoMigrate)
+        {
             store.EnsureSchemaAsync().GetAwaiter().GetResult();
         }
 

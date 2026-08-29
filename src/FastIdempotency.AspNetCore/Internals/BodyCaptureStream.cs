@@ -18,7 +18,7 @@ namespace FastIdempotency.AspNetCore.Internals;
 /// </summary>
 internal sealed class BodyCaptureStream : Stream
 {
-    private static readonly RecyclableMemoryStreamManager PoolManager
+    internal static readonly RecyclableMemoryStreamManager PoolManager
         = new RecyclableMemoryStreamManager();
 
     private readonly Stream _innerStream;

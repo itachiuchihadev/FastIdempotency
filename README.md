@@ -1,6 +1,6 @@
 # FastIdempotency
 
-⚡ High-Performance, Distributed Idempotency Middleware for ASP.NET Core (.NET 8).
+⚡ High-Performance, Distributed Idempotency Middleware for ASP.NET Core (.NET 10).
 
 When network timeouts, client retries, or duplicate webhooks hit your API, duplicate processing can cause critical bugs (such as double-charging a customer or duplicating inventory orders).
 
@@ -12,9 +12,22 @@ When network timeouts, client retries, or duplicate webhooks hit your API, dupli
 
 ---
 
+## 📦 Package Ecosystem
+
+FastIdempotency is organized into modular packages so you only install what you need:
+
+| Package | Purpose | Install Command |
+| :--- | :--- | :--- |
+| **`FastIdempotency.AspNetCore`** | ASP.NET Core middleware, response stream capture, pipeline lifecycle. | `dotnet add package FastIdempotency.AspNetCore` |
+| **`FastIdempotency.Storage.Redis`** | Redis distributed store with atomic Lua locking & pipelined hashing. | `dotnet add package FastIdempotency.Storage.Redis` |
+| **`FastIdempotency.Storage.Postgres`** | PostgreSQL store with row-level locking & `NpgsqlDataSource` pooling. | `dotnet add package FastIdempotency.Storage.Postgres` |
+| **`FastIdempotency.Core`** | Abstractions (`IIdempotencyStore`), models, and SIMD `XxHash3` hasher. | `dotnet add package FastIdempotency.Core` |
+
+---
+
 ## 📊 End-to-End Performance Benchmarks
 
-*Hardware: 11th Gen Intel Core i7-11800H @ 2.30GHz (8 cores / 16 threads), .NET 8.0 RyuJIT x64, Windows 11*  
+*Hardware: 11th Gen Intel Core i7-11800H @ 2.30GHz (8 cores / 16 threads), .NET 10.0 RyuJIT x64, Windows 11*  
 *Benchmarks executed via [BenchmarkDotNet](https://benchmarkdotnet.org/)*
 
 ### 1. Redis End-to-End & Store Benchmarks (Live Docker Redis 7)
@@ -23,13 +36,13 @@ Tested against a live Redis container with atomic Lua distributed locking and pi
 
 | Benchmark Operation | Mean Latency | Gen0 / 1k ops | Gen1 / 1k ops | Allocated Memory |
 | :--- | :---: | :---: | :---: | :---: |
-| **`Redis Store: SaveCompletedAsync`** (Batch HashSet + Expire) | **9.316 μs** | 0.1221 | 0.0610 | **2.16 KB** |
-| **`Redis Store: GetAsync`** (Cache Hit fetch) | **952.387 μs** | — | — | **3.11 KB** |
-| **`Redis Store: TryAcquireLockAsync`** (Atomic Lua Lock) | **986.947 μs** | — | — | **1.03 KB** |
-| **`Pipeline: Cache Hit with Redis`** *(Replay Response)* | **1,016.180 μs** (~1.0 ms) | — | — | **6.17 KB** |
-| **`Pipeline: Cache Miss with Redis`** *(Lock + Execute + Cache)* | **2,511.522 μs** (~2.5 ms) | — | — | **7.45 KB** |
+| **`Redis Store: SaveCompletedAsync`** (Batch HashSet + Expire) | **6.604 μs** | 0.2747 | 0.1221 | **3.65 KB** |
+| **`Pipeline: Cache Hit with Redis`** *(Replay Response)* | **653.317 μs** (~0.65 ms) | — | — | **6.10 KB** |
+| **`Redis Store: GetAsync`** (Cache Hit fetch) | **946.250 μs** | — | — | **3.11 KB** |
+| **`Redis Store: TryAcquireLockAsync`** (Atomic Lua Lock) | **963.437 μs** | — | — | **1.03 KB** |
+| **`Pipeline: Cache Miss with Redis`** *(Lock + Execute + Cache)* | **1,633.261 μs** (~1.63 ms) | — | — | **7.13 KB** |
 
-> **Key takeaway:** FastIdempotency adds sub-millisecond overhead for atomic Redis distributed locking, and short-circuits cache hit replays in **~1.0 ms** total pipeline time with single-digit KB memory allocations.
+> **Key takeaway:** FastIdempotency adds sub-millisecond overhead for atomic Redis distributed locking, and short-circuits cache hit replays in **~0.65 ms** total pipeline time with single-digit KB memory allocations.
 
 ---
 
@@ -39,10 +52,10 @@ Measures pure middleware overhead excluding network and disk I/O.
 
 | Scenario | Mean Latency | Gen0 / 1k ops | Allocated Memory | Description |
 | :--- | :---: | :---: | :---: | :--- |
-| **Passthrough** | **1.230 μs** | 0.1278 | **1.59 KB** | Request without `Idempotency-Key` header |
-| **Payload Mismatch** | **4.003 μs** | 0.3052 | **3.74 KB** | Fingerprint mismatch -> rejected with 422 |
-| **Cache Hit (Replayed)** | **4.079 μs** | 0.3052 | **3.74 KB** | Duplicate request short-circuited & served |
-| **Cache Miss (First Execution)** | **4.319 μs** | 0.2975 | **3.73 KB** | Lock acquire + Controller execution + Stream capture + Store |
+| **Passthrough** | **1.067 μs** | 0.1278 | **1.59 KB** | Request without `Idempotency-Key` header |
+| **Cache Hit (Replayed)** | **3.712 μs** | 0.2975 | **3.67 KB** | Duplicate request short-circuited & served |
+| **Payload Mismatch** | **3.774 μs** | 0.2975 | **3.67 KB** | Fingerprint mismatch -> rejected with 422 |
+| **Cache Miss (First Execution)** | **3.827 μs** | 0.2975 | **3.66 KB** | Lock acquire + Controller execution + Stream capture + Store |
 
 ---
 
@@ -52,9 +65,21 @@ FastIdempotency uses SIMD-accelerated **XxHash3** (`System.IO.Hashing`) for zero
 
 | Hash Algorithm | 128 B Payload | 1 KB Payload | 10 KB Payload | 100 KB Payload | Speedup vs SHA256 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **XxHash3 (FastIdempotency)** | **161.7 ns** | **266.4 ns** | **706.0 ns** | **5.728 μs** | **Baseline (Up to 18.4x faster)** |
-| **SHA256** | 539.3 ns | 1,458.4 ns | 11,008.0 ns | 105.202 μs | ~3.3x - 18.4x slower |
-| **MD5** | 877.5 ns | 3,514.6 ns | 30,676.6 ns | 301.317 μs | ~5.4x - 52.6x slower |
+| **XxHash3 (FastIdempotency)** | **152.2 ns** | **252.3 ns** | **629.7 ns** | **5.626 μs** | **Baseline (Up to 18.7x faster)** |
+| **SHA256** | 550.2 ns | 1,459.1 ns | 10,909.2 ns | 104.981 μs | ~3.6x - 18.7x slower |
+| **MD5** | 876.0 ns | 3,503.3 ns | 30,690.6 ns | 302.698 μs | ~5.8x - 53.8x slower |
+
+---
+
+### 4. Memory Stream Buffering (RecyclableMemoryStream vs Naive MemoryStream)
+
+FastIdempotency uses `Microsoft.IO.RecyclableMemoryStream` to eliminate Large Object Heap (LOH) fragmentation on captured response bodies:
+
+| Response Size | BodyCaptureStream (FastIdempotency) | Naive MemoryStream | Allocated Memory | Allocation Reduction |
+| :--- | :---: | :---: | :---: | :---: |
+| **1 KB** | **537.8 ns** | 205.9 ns | **1.34 KB** vs 2.11 KB | **36% less memory** |
+| **64 KB** | **9.602 μs** | 12.390 μs (1.29x slower) | **64.34 KB** vs 128.11 KB | **50% less memory** |
+| **256 KB** | **139.873 μs** | 260.058 μs (1.86x slower) | **256.44 KB** vs 512.16 KB | **50% less memory (Zero LOH)** |
 
 ---
 
@@ -63,29 +88,25 @@ FastIdempotency uses SIMD-accelerated **XxHash3** (`System.IO.Hashing`) for zero
 ### 1. Install via NuGet
 
 ```bash
-# Core Middleware
+# Core Middleware (Required)
 dotnet add package FastIdempotency.AspNetCore
 
-# Redis Storage Provider
-dotnet add package FastIdempotency.Storage.Redis
-
-# OR PostgreSQL Storage Provider
-dotnet add package FastIdempotency.Storage.Postgres
+# Choose your Storage Backend:
+dotnet add package FastIdempotency.Storage.Redis     # Option A: Redis
+# OR
+dotnet add package FastIdempotency.Storage.Postgres  # Option B: PostgreSQL
 ```
 
-### 2. Register Services
+### 2. Register Services in `Program.cs`
 
+#### Option A: With Redis
 ```csharp
 using FastIdempotency.AspNetCore;
 using FastIdempotency.Storage.Redis;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Register Redis connection
-var redis = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379");
-
-// Configure FastIdempotency
+// Register FastIdempotency with Redis
 builder.Services.AddFastIdempotency(options =>
 {
     options.HeaderName = "Idempotency-Key";
@@ -93,16 +114,51 @@ builder.Services.AddFastIdempotency(options =>
     options.LockTimeout = TimeSpan.FromSeconds(30);
     options.MaxPayloadSizeBytes = 10 * 1024 * 1024; // 10 MB
 })
-.UseRedis(redis);
+.AddFastIdempotencyRedis(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379");
 
 var app = builder.Build();
 
-// Add middleware to pipeline
 app.UseFastIdempotency();
-
 app.MapControllers();
 app.Run();
 ```
+
+#### Option B: With PostgreSQL
+```csharp
+using FastIdempotency.AspNetCore;
+using FastIdempotency.Storage.Postgres;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Register FastIdempotency with PostgreSQL (auto-migrates schema on startup)
+builder.Services.AddFastIdempotency(options =>
+{
+    options.HeaderName = "Idempotency-Key";
+    options.RetentionWindow = TimeSpan.FromHours(24);
+})
+.AddFastIdempotencyPostgres(builder.Configuration.GetConnectionString("Postgres")!);
+
+var app = builder.Build();
+
+app.UseFastIdempotency();
+app.MapControllers();
+app.Run();
+```
+
+---
+
+## ⚙️ Configuration Options
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `HeaderName` | `string` | `"Idempotency-Key"` | Name of the HTTP header to inspect. |
+| `RetentionWindow` | `TimeSpan` | `24 hours` | How long completed responses are cached and replayed. |
+| `LockTimeout` | `TimeSpan` | `30 seconds` | Max duration a lock is held before being eligible for expiry. |
+| `MaxPayloadSizeBytes` | `long` | `10 MB` | Max allowed request payload size to buffer. |
+| `KeyPrefix` | `string` | `"idemp:"` | Key prefix in Redis/Postgres to avoid collisions. |
+| `EnableSmartPolling` | `bool` | `true` | When `true`, concurrent in-flight duplicate requests wait and poll for the in-progress response rather than immediately failing with 409. |
+| `SmartPollInterval` | `TimeSpan` | `50 ms` | Polling frequency for concurrent in-flight requests. |
+| `SmartPollTimeout` | `TimeSpan` | `5 seconds` | Max time a concurrent request will wait for completion. |
 
 ---
 
@@ -112,21 +168,21 @@ app.Run();
 flowchart TD
     Client[Client Request with Idempotency-Key] --> MW[IdempotencyMiddleware]
     MW --> Hash[Compute XxHash3 Payload Fingerprint]
-    MW --> Check{Record Exists in Redis?}
+    MW --> Check{Record Exists in Store?}
     Check -->|Completed & Hash Matches| Replay[Replay Cached Response 200/201]
     Check -->|Completed & Hash Mismatch| Reject[422 Unprocessable Content: Payload Mismatch]
-    Check -->|InFlight| LockHeld[409 Conflict / Smart Polling]
-    Check -->|Not Found| Lock[Acquire Distributed Lock via Lua]
+    Check -->|InFlight| LockHeld[Smart Polling / 409 Conflict]
+    Check -->|Not Found| Lock[Acquire Distributed Lock]
     Lock --> Downstream[Execute Controller / Business Logic]
     Downstream --> Capture[Capture Response via Recyclable Stream]
-    Capture --> Save[Batch Save Response & Set TTL in Redis]
     Save --> ClientResponse[Return Response to Client]
+    Capture --> Save[Batch Save Response & Set TTL]
 ```
 
-- **Atomic Distributed Locking**: Redis Lua scripts ensure race-free distributed locking across auto-scaled replica instances.
-- **Payload Validation**: Prevents reusing the same key with different payloads.
-- **Recyclable Memory Streams**: Non-allocating buffer management for response capture.
-- **Multi-Storage Support**: First-class support for Redis and PostgreSQL.
+- **Atomic Distributed Locking**: Redis Lua scripts and PostgreSQL row-level locks prevent race conditions across replica instances.
+- **Payload Verification**: SIMD `XxHash3` hashing rejects duplicate keys reused with different payloads (`422 Unprocessable Content`).
+- **Zero LOH Allocations**: `Microsoft.IO.RecyclableMemoryStream` pool prevents memory leaks on large response payloads.
+- **Pluggable Architecture**: Clear separation of concerns with standalone storage providers.
 
 ---
 
@@ -144,6 +200,11 @@ dotnet test
 
 ### Run Benchmarks
 ```bash
-dotnet run -c Release --project tests/FastIdempotency.Benchmarks -- --filter *RedisStore*
-```
+# Run all benchmarks
+dotnet run -c Release --project tests/FastIdempotency.Benchmarks -- --filter *
 
+# Run specific suite
+dotnet run -c Release --project tests/FastIdempotency.Benchmarks -- --filter *RedisStore*
+dotnet run -c Release --project tests/FastIdempotency.Benchmarks -- --filter *Hashing*
+dotnet run -c Release --project tests/FastIdempotency.Benchmarks -- --filter *BodyCapture*
+```

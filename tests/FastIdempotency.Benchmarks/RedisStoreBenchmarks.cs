@@ -16,7 +16,7 @@ namespace FastIdempotency.Benchmarks;
 /// <summary>
 /// Benchmarks for RedisIdempotencyStore operations and end-to-end middleware execution with a real Redis instance.
 /// </summary>
-[SimpleJob(RuntimeMoniker.Net80)]
+[SimpleJob]
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev", "Median", "RatioSD")]
 public class RedisStoreBenchmarks

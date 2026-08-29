@@ -10,7 +10,7 @@ namespace FastIdempotency.Benchmarks;
 /// Microbenchmarks comparing XxHash3 vs SHA256 vs MD5 for request fingerprinting.
 /// Demonstrates zero-allocation performance of FastIdempotency's SIMD-accelerated XxHash3 hasher.
 /// </summary>
-[SimpleJob(RuntimeMoniker.Net80)]
+[SimpleJob]
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev", "Median", "RatioSD")]
 public class HashingBenchmarks
